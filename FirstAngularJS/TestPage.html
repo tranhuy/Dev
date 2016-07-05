@@ -57,7 +57,7 @@
         <div class="page-header"><h2>New Contact Form</h2></div>
         <form name="frmNewContact" novalidate>
             <div class="form-group">
-                <label for="fName">Firt Name:</label>
+                <label for="fName">First Name:</label>
                 <input type="text" id="fName" name="fName" class="form-control" ng-model="contactToAdd.firstName" placeholder="Enter First Name" autofocus required />
                 <span ng-show="(submitted && frmNewContact.fName.$error.required) || (!submitted && frmNewContact.fName.$error.required && frmNewContact.fName.$dirty)" class="errorMsg">Please enter first name</span>
             </div>
@@ -72,6 +72,7 @@
                        ng-model="contactToAdd.phone" 
                        ng-pattern="/^(?:\(\d{3}\)|\d{3}-)\d{3}-\d{4}$/"
                        placeholder ="Enter Phone Number ###-###-#### or (###)-###-####" 
+                       autocomplete="off"
                        required />
                 <div class="errorMsg" ng-messages="frmNewContact.phoneNo.$error" ng-if="submitted || frmNewContact.phoneNo.$dirty" role="alert">
                     <div ng-message="required">Please enter a phone number</div>
