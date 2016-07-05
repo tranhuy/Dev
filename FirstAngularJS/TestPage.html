@@ -1,0 +1,106 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    
+    <link href="Content/bootstrap.min.css" rel="stylesheet" />
+
+    <script src="scripts/jquery-1.9.1.min.js"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <script src="scripts/angular.min.js"></script>
+    <script src="scripts/angular-messages.min.js"></script>
+
+    <style type="text/css">
+        th {
+            padding-right: 5em;
+        }
+
+        td {
+            padding-bottom: 1em;
+        }
+
+        .errorMsg {
+            color: red;
+        }
+    </style>
+
+    <script>
+        var contactApp = angular.module('ContactApp', ['ngMessages']);
+
+        contactApp.controller('PhoneDirectoryController', function ($scope) {
+            $scope.submitted;
+            $scope.contacts = [];
+
+            $scope.addContact = function (contactToAdd) {
+                if ($scope.frmNewContact.$valid) {
+                    $scope.contacts.push(angular.copy(contactToAdd));  // make deep copy of object before adding to array since Javascript objects are passed by reference
+                    contactToAdd.firstName = "";
+                    contactToAdd.lastName = "";
+                    contactToAdd.phone = "";
+                    $scope.submitted = false;
+                    $scope.frmNewContact.$setPristine();  // reset ng-pristine for all form controls
+                } else {
+                    angular.element("[name='" + $scope.frmNewContact.$name + "']").find('.ng-invalid:visible:first').focus();
+                    $scope.submitted = true;
+                }
+            }
+
+            $scope.removeContact = function (index) {
+                $scope.contacts.splice(index, 1);
+            }
+        })
+    </script>
+</head>
+<body ng-app="ContactApp" ng-controller="PhoneDirectoryController">
+    <div class="container">
+        <div class="page-header"><h2>New Contact Form</h2></div>
+        <form name="frmNewContact" novalidate>
+            <div class="form-group">
+                <label for="fName">Firt Name:</label>
+                <input type="text" id="fName" name="fName" class="form-control" ng-model="contactToAdd.firstName" placeholder="Enter First Name" autofocus required />
+                <span ng-show="(submitted && frmNewContact.fName.$error.required) || (!submitted && frmNewContact.fName.$error.required && frmNewContact.fName.$dirty)" class="errorMsg">Please enter first name</span>
+            </div>
+            <div class="form-group">
+                <label for="lName">Last Name:</label>
+                <input type="text" id="lName" name="lName" class="form-control" ng-model="contactToAdd.lastName" placeholder="Enter Last Name" required />
+                <span ng-show="(submitted && frmNewContact.lName.$error.required) || (!submitted && frmNewContact.lName.$error.required && frmNewContact.lName.$dirty)" class="errorMsg">Please enter last name</span>
+            </div>
+            <div class="form-group">
+                <label for="phoneNo">Phone Number:</label>
+                <input type="text" id="phoneNo" name="phoneNo" class="form-control" 
+                       ng-model="contactToAdd.phone" 
+                       ng-pattern="/^(?:\(\d{3}\)|\d{3}-)\d{3}-\d{4}$/"
+                       placeholder ="Enter Phone Number ###-###-#### or (###)-###-####" 
+                       required />
+                <div class="errorMsg" ng-messages="frmNewContact.phoneNo.$error" ng-if="submitted || frmNewContact.phoneNo.$dirty" role="alert">
+                    <div ng-message="required">Please enter a phone number</div>
+                    <div ng-message="pattern">Phone number must in be in the following format ###-###-#### or (###)-###-####</div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" ng-click="addContact(contactToAdd)">ADD CONTACT</button>
+        </form>
+
+        <div ng-if="contacts.length > 0">
+            <h2>PHONE DIRECTORY</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Phone No.</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tr ng-repeat="contact in contacts">
+                    <td>{{ contact.firstName }}</td>
+                    <td>{{ contact.lastName }}</td>
+                    <td>{{ contact.phone }}</td>
+                    <td><button ng-click="removeContact($index)">DELETE</button></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
