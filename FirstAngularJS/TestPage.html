@@ -1,9 +1,10 @@
 ﻿<!DOCTYPE html>
 <html>
+
 <head>
     <title></title>
     <meta charset="utf-8" />
-    
+
     <link href="Content/bootstrap.min.css" rel="stylesheet" />
 
     <script src="scripts/jquery-1.9.1.min.js"></script>
@@ -28,18 +29,19 @@
     <script>
         var contactApp = angular.module('ContactApp', ['ngMessages']);
 
-        contactApp.controller('PhoneDirectoryController', function ($scope) {
+        contactApp.controller('PhoneDirectoryController', function($scope) {
             $scope.submitted;
             $scope.contacts = [];
-
-            $scope.addContact = function (contactToAdd) {
+            $scope.saveContactStateBeforeEdit = []; //Used for cancel feature.
+            $scope.addContact = function(contactToAdd) {
                 if ($scope.frmNewContact.$valid) {
-                    $scope.contacts.push(angular.copy(contactToAdd));  // make deep copy of object before adding to array since Javascript objects are passed by reference
+                    contactToAdd.editFlag = false;
+                    $scope.contacts.push(angular.copy(contactToAdd)); // make deep copy of object before adding to array since Javascript objects are passed by reference
                     contactToAdd.firstName = "";
                     contactToAdd.lastName = "";
                     contactToAdd.phone = "";
                     $scope.submitted = false;
-                    $scope.frmNewContact.$setPristine();  // reset ng-pristine for all form controls
+                    $scope.frmNewContact.$setPristine(); // reset ng-pristine for all form controls
                 } else {
                     angular.element("[name='" + $scope.frmNewContact.$name + "']").find('.ng-invalid:visible:first').focus();
                     $scope.submitted = true;
@@ -47,17 +49,43 @@
             }
 
             $scope.removeContact = function (index) {
+
                 $scope.contacts.splice(index, 1);
             }
+
+            $scope.editContact = function(index) {
+                //Save current state object
+                var tempContactState = {};
+                tempContactState.firstName = $scope.contacts[index].firstName;
+                tempContactState.lastName = $scope.contacts[index].lastName;
+                tempContactState.phoneNumber = $scope.contacts[index].phone;
+                //add state to temp state array
+                $scope.saveContactStateBeforeEdit[index] = angular.copy(tempContactState);
+                //enable editing
+                $scope.contacts[index].editFlag = !$scope.contacts[index].editFlag;
+            }
+
+            $scope.cancelEdit = function(index) {
+                //retrieve state of contact
+                $scope.contacts[index].firstName = $scope.saveContactStateBeforeEdit[index].firstName;
+                $scope.contacts[index].lastName = $scope.saveContactStateBeforeEdit[index].lastName;
+                $scope.contacts[index].phone = $scope.saveContactStateBeforeEdit[index].phoneNumber;
+                //disable editing
+                $scope.contacts[index].editFlag = !$scope.contacts[index].editFlag;
+            }
+
         })
     </script>
 </head>
+
 <body ng-app="ContactApp" ng-controller="PhoneDirectoryController">
     <div class="container">
-        <div class="page-header"><h2>New Contact Form</h2></div>
+        <div class="page-header">
+            <h2>New Contact Form</h2>
+        </div>
         <form name="frmNewContact" novalidate>
             <div class="form-group">
-                <label for="fName">First Name:</label>
+                <label for="fName">Firt Name:</label>
                 <input type="text" id="fName" name="fName" class="form-control" ng-model="contactToAdd.firstName" placeholder="Enter First Name" autofocus required />
                 <span ng-show="(submitted && frmNewContact.fName.$error.required) || (!submitted && frmNewContact.fName.$error.required && frmNewContact.fName.$dirty)" class="errorMsg">Please enter first name</span>
             </div>
@@ -68,40 +96,73 @@
             </div>
             <div class="form-group">
                 <label for="phoneNo">Phone Number:</label>
-                <input type="text" id="phoneNo" name="phoneNo" class="form-control" 
-                       ng-model="contactToAdd.phone" 
-                       ng-pattern="/^(?:\(\d{3}\)|\d{3}-)\d{3}-\d{4}$/"
-                       placeholder ="Enter Phone Number ###-###-#### or (###)-###-####" 
-                       autocomplete="off"
-                       required />
+                <input type="text" id="phoneNo" name="phoneNo" class="form-control" ng-model="contactToAdd.phone" ng-pattern="/^(?:\(\d{3}\)|\d{3}-)\d{3}-\d{4}$/" placeholder="Enter Phone Number xxx-xxx-xxxx or (xxx)-xxx-xxxx" required />
                 <div class="errorMsg" ng-messages="frmNewContact.phoneNo.$error" ng-if="submitted || frmNewContact.phoneNo.$dirty" role="alert">
                     <div ng-message="required">Please enter a phone number</div>
-                    <div ng-message="pattern">Phone number must in be in the following format ###-###-#### or (###)-###-####</div>
+                    <div ng-message="pattern">Phone number must in be in the following format XXX-XXX-XXXX</div>
                 </div>
             </div>
             <button type="submit" class="btn btn-primary" ng-click="addContact(contactToAdd)">ADD CONTACT</button>
         </form>
 
-        <div ng-if="contacts.length > 0">
-            <h2>PHONE DIRECTORY</h2>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Phone No.</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tr ng-repeat="contact in contacts">
-                    <td>{{ contact.firstName }}</td>
-                    <td>{{ contact.lastName }}</td>
-                    <td>{{ contact.phone }}</td>
-                    <td><button class="btn btn-secondary btn-sm" ng-click="removeContact($index)">DELETE</button></td>
-                </tr>
-            </table>
+        <h2>PHONE DIRECTORY</h2>
+        <!--Contact List Header-->
+        <div class="list-group">
+            <div class="list-group-item active" style="overflow:auto;">
+                <div class="col-sm-3">First Name</div>
+                <div class="col-sm-3">Last Name</div>
+                <div class="col-sm-3">Phone Number</div>
+                <div class="col-sm-3">Action</div>
+            </div>
+        </div>
+        <!--Header End -->
+        <div class="list-group" ng-repeat="contact in contacts">
+            <div class="list-group-item " style="overflow:auto;">
+                <div ng-form="editForm">
+                    <div class="col-sm-3">
+                        <div ng-show="!contact.editFlag">{{ contact.firstName }}</div>
+                        <div ng-show="contact.editFlag">
+                            <input name="fname" required style="border: solid thin orange;" ng-model="contact.firstName" class="form-control" ng-maxlength="15" />
+                            <div class="errorMsg">
+                                <span class="error" ng-show="editForm.fname.$error.required">Please Enter First Name</span>
+                                <span class="error" ng-show="editForm.fname.$error.maxlength">Too Long</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div ng-show="!contact.editFlag">{{ contact.lastName }}</div>
+                        <div ng-show="contact.editFlag">
+                            <input name="lname" required style="border: solid thin orange;" ng-model="contact.lastName" class="form-control" ng-maxlength="15" />
+                            <div class="errorMsg">
+                                <span class="error" ng-show="editForm.lname.$error.required">Please Enter Last Name</span>
+                                <span class="error" ng-show="editForm.lname.$error.maxlength">Too Long</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div ng-show="!contact.editFlag">{{ contact.phone }}</div>
+                        <div ng-show="contact.editFlag">
+                            <input style="border: solid thin orange;" name="phoneNo" required ng-model="contact.phone" class="form-control" ng-pattern="/^(?:\(\d{3}\)|\d{3}-)\d{3}-\d{4}$/" />
+                            <div class="errorMsg" ng-messages="editForm.phoneNo.$error" ng-if="submitted || editForm.phoneNo.$dirty" role="alert">
+                                <div ng-message="required">Please enter a phone number</div>
+                                <div ng-message="pattern">Format: XXX-XXX-XXXX</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <button ng-if="!contact.editFlag" ng-click="removeContact($index)" class="btn btn-danger">DELETE</button>
+                        <span ng-click="editContact($index)">
+                            <button ng-if="contact.editFlag" class="btn btn-success" ng-disabled="editForm.$invalid">SAVE</button>
+                            <button ng-if="!contact.editFlag" class="btn btn-warning ">EDIT</button>
+                        </span>
+                        <span ng-click="cancelEdit($index)">
+                            <button ng-if="contact.editFlag" class="btn btn-default">CANCEL</button>
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </body>
+
 </html>
